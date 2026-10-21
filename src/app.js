@@ -30,7 +30,8 @@ app.use(
         'http://localhost:3000',
         'http://127.0.0.1:3000',
       ];
-      if (allowed.includes(origin) || env.NODE_ENV === 'development') {
+      const isVercel = origin.endsWith('.vercel.app');
+      if (allowed.includes(origin) || isVercel || env.NODE_ENV === 'development') {
         return callback(null, true);
       }
       return callback(new Error('Not allowed by CORS'));
@@ -40,6 +41,20 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   })
 );
+
+// ─── Root Route ──────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'ID CRM Backend API is active',
+    version: '1.0.0',
+    status: 'online',
+    endpoints: {
+      health: '/api/v1/health',
+      docs: '/api/v1',
+    },
+  });
+});
 
 // ─── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));

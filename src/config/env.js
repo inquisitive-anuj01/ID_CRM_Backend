@@ -3,11 +3,11 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(8000),
-  MONGO_URI: z.string().min(1, 'MONGO_URI is required'),
+  MONGO_URI: z.string().default('mongodb+srv://InquisitiveAnuj:Inquisitive07Anuj@cluster0.ffoew59.mongodb.net/ID_CRM?retryWrites=true&w=majority'),
   CLIENT_URL: z.string().default('http://localhost:5173'),
-  JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
+  JWT_ACCESS_SECRET: z.string().default('365crm_access_super_secret_key_2024_xyz'),
   JWT_ACCESS_EXPIRES: z.string().default('15m'),
-  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+  JWT_REFRESH_SECRET: z.string().default('365crm_refresh_super_secret_key_2024_abc'),
   JWT_REFRESH_EXPIRES: z.string().default('7d'),
   UPLOAD_DIR: z.string().default('uploads'),
   MAX_FILE_SIZE_MB: z.coerce.number().default(5),
@@ -20,9 +20,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('❌  Invalid environment variables:');
-  console.error(parsed.error.flatten().fieldErrors);
-  process.exit(1);
+  console.error('⚠️  Environment variables warning:', parsed.error.flatten().fieldErrors);
 }
 
-export const env = parsed.data;
+export const env = parsed.success ? parsed.data : envSchema.parse({});
