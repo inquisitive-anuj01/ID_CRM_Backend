@@ -25,7 +25,10 @@ router.post('/', authorize('admin'), validate({ body: createUserSchema }), userC
 router.get('/:id', authorize('admin'), userCtrl.getUser);
 router.patch('/:id', authorize('admin'), validate({ body: updateUserSchema }), userCtrl.updateUser);
 router.patch('/:id/status', authorize('admin'), validate({ body: userStatusSchema }), userCtrl.setUserStatus);
+router.patch('/:id/activate', authorize('admin'), userCtrl.activateUser);
+router.patch('/:id/deactivate', authorize('admin'), userCtrl.deactivateUser);
 router.patch('/:id/reset-password', authorize('admin'), validate({ body: resetPasswordSchema }), userCtrl.resetPassword);
+router.post('/:id/reset-password', authorize('admin'), validate({ body: resetPasswordSchema }), userCtrl.resetPassword);
 router.post('/:id/reassign-leads', authorize('admin'), validate({ body: reassignLeadsSchema }), userCtrl.reassignLeads);
 
 export default router;

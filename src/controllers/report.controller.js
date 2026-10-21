@@ -26,3 +26,17 @@ export const getOverdue = asyncHandler(async (req, res) => {
   const data = await reportService.getOverdueReport(req.user);
   ApiResponse.ok(res, 'Overdue report', data);
 });
+
+export const getConversion = asyncHandler(async (req, res) => {
+  const data = await reportService.getConversionReport(req.user, req.query);
+  ApiResponse.ok(res, 'Conversion report', data);
+});
+
+export const exportReport = asyncHandler(async (req, res) => {
+  const { exportLeads } = await import('../services/leadList.service.js');
+  const workbook = await exportLeads(req.user, req.query);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="leads_report.xlsx"');
+  await workbook.xlsx.write(res);
+  res.end();
+});

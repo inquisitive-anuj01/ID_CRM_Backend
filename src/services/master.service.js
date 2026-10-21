@@ -105,3 +105,27 @@ export const updateSetting = async (data) => {
   );
   return setting;
 };
+
+export const deleteStatus = async (id) => {
+  const status = await LeadStatus.findByIdAndDelete(id);
+  if (!status) throw ApiError.notFound('Status not found');
+  return status;
+};
+
+export const deleteSource = async (id) => {
+  const source = await Source.findByIdAndDelete(id);
+  if (!source) throw ApiError.notFound('Source not found');
+  return source;
+};
+
+export const deleteLabel = async (id) => {
+  const label = await Label.findByIdAndDelete(id);
+  if (!label) throw ApiError.notFound('Label not found');
+  return label;
+};
+
+export const deleteCategory = async (id) => {
+  const cat = await FollowupCategory.findByIdAndDelete(id);
+  if (!cat) throw ApiError.notFound('Category not found');
+  return cat;
+};

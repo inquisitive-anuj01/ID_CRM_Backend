@@ -190,3 +190,43 @@ export const getOverdueReport = async (user) => {
     assignedTo: l.assignedTo,
   }));
 };
+
+export const getConversionReport = async (user, query) => {
+  const scope = leadScope(user);
+  const dateFilter = buildDateFilter(query);
+
+  const [totalLeads, confirmedLeads, cancelledLeads] = await Promise.all([
+    Lead.countDocuments({ ...scope, ...dateFilter }),
+    Lead.countDocuments({ ...scope, ...dateFilter, status: 'confirm' }),
+    Lead.countDocuments({ ...scope, ...dateFilter, status: 'cancel' }),
+  ]);
+
+  const activeLeads = totalLeads - confirmedLeads - cancelledLeads;
+  const conversionRate = totalLeads > 0 ? Math.round((confirmedLeads / totalLeads) * 100) : 0;
+  const cancellationRate = totalLeads > 0 ? Math.round((cancelledLeads / totalLeads) * 100) : 0;
+
+  // Calculate avg days to close for confirmed leads
+  const closedLeads = await Lead.find({
+    ...scope,
+    ...dateFilter,
+    status: 'confirm',
+    closedAt: { $ne: null },
+  }).select('createdAt closedAt').lean();
+
+  let totalDays = 0;
+  closedLeads.forEach((l) => {
+    const diff = (new Date(l.closedAt) - new Date(l.createdAt)) / (1000 * 60 * 60 * 24);
+    totalDays += Math.max(0, diff);
+  });
+  const avgDaysToClose = closedLeads.length > 0 ? Math.round((totalDays / closedLeads.length) * 10) / 10 : 0;
+
+  return {
+    totalLeads,
+    confirmedLeads,
+    cancelledLeads,
+    activeLeads,
+    conversionRate,
+    cancellationRate,
+    avgDaysToClose,
+  };
+};

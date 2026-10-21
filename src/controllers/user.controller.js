@@ -32,6 +32,16 @@ export const setUserStatus = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, `User ${req.body.isActive ? 'activated' : 'deactivated'}`, user);
 });
 
+export const activateUser = asyncHandler(async (req, res) => {
+  const user = await userService.setUserStatus(req.params.id, true);
+  ApiResponse.ok(res, 'User activated', user);
+});
+
+export const deactivateUser = asyncHandler(async (req, res) => {
+  const user = await userService.setUserStatus(req.params.id, false);
+  ApiResponse.ok(res, 'User deactivated', user);
+});
+
 export const resetPassword = asyncHandler(async (req, res) => {
   await userService.adminResetPassword(req.params.id, req.body.newPassword);
   ApiResponse.ok(res, 'Password reset successfully');

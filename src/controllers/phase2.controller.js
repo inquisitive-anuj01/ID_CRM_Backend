@@ -113,6 +113,21 @@ export const getCustomers = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, 'Customers fetched', data);
 });
 
+export const createCustomer = asyncHandler(async (req, res) => {
+  const data = await phase2Service.createCustomer(req.user, req.body);
+  ApiResponse.created(res, 'Customer created', data);
+});
+
+export const updateCustomer = asyncHandler(async (req, res) => {
+  const data = await phase2Service.updateCustomer(req.params.id, req.body);
+  ApiResponse.ok(res, 'Customer updated', data);
+});
+
+export const deleteCustomer = asyncHandler(async (req, res) => {
+  await phase2Service.deleteCustomer(req.params.id);
+  ApiResponse.ok(res, 'Customer deleted');
+});
+
 export const convertToCustomer = asyncHandler(async (req, res) => {
   const data = await phase2Service.convertLeadToCustomer(req.params.leadId);
   ApiResponse.created(res, 'Lead converted to customer', data);

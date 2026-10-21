@@ -137,6 +137,25 @@ export const deleteMeeting = async (id) => {
 };
 
 // ─── Customers (Converted from confirmed lead) ────────────────────────────────
+export const createCustomer = async (actor, data) => {
+  return Customer.create({
+    ...data,
+    accountManager: data.accountManager || actor._id,
+  });
+};
+
+export const updateCustomer = async (id, data) => {
+  const customer = await Customer.findByIdAndUpdate(id, data, { new: true })
+    .populate('accountManager', 'name email avatar');
+  if (!customer) throw ApiError.notFound('Customer not found');
+  return customer;
+};
+
+export const deleteCustomer = async (id) => {
+  await Customer.findByIdAndDelete(id);
+  return { success: true };
+};
+
 export const convertLeadToCustomer = async (leadId) => {
   const lead = await Lead.findById(leadId);
   if (!lead) throw ApiError.notFound('Lead not found');

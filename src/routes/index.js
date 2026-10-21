@@ -15,7 +15,7 @@ const router = Router();
 
 // Health check
 router.get('/health', (req, res) => {
-  ApiResponse.ok(res, '365 CRM API is healthy', {
+  ApiResponse.ok(res, 'ID CRM API is healthy', {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
@@ -25,6 +25,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/', masterRoutes);
+router.use('/master', masterRoutes);
 router.use('/leads', leadRoutes);
 router.use('/', followupRoutes);
 router.use('/dashboard', dashboardRoutes);

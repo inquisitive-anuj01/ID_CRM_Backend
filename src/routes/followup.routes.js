@@ -20,6 +20,10 @@ router.post(
 );
 
 // General followup actions
+router.get('/followups/daily-agenda', (req, res, next) => {
+  req.query.when = req.query.when || 'today';
+  return followupCtrl.getMyFollowups(req, res, next);
+});
 router.patch('/followups/:id', validate({ body: updateFollowupSchema }), followupCtrl.updateFollowup);
 router.delete('/followups/:id', followupCtrl.deleteFollowup);
 router.get('/followups', followupCtrl.getMyFollowups);

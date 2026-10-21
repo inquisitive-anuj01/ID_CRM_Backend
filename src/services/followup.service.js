@@ -20,12 +20,30 @@ export const calcFollowupPolicy = (createdAt, nextFollowupDate, allowedMinutes =
 /**
  * Add a followup to a lead
  */
+import mongoose from 'mongoose';
+
 export const createFollowup = async (leadId, actor, data, files = []) => {
   const lead = await Lead.findById(leadId);
   if (!lead || lead.isDeleted) throw ApiError.notFound('Lead not found');
 
-  const category = await FollowupCategory.findById(data.category);
-  if (!category || !category.isActive) throw ApiError.badRequest('Invalid or inactive followup category');
+  let category = null;
+  if (data.category) {
+    if (mongoose.Types.ObjectId.isValid(data.category)) {
+      category = await FollowupCategory.findById(data.category);
+    }
+    if (!category) {
+      category = await FollowupCategory.findOne({
+        name: { $regex: new RegExp(`^${data.category.trim()}$`, 'i') },
+      });
+    }
+  }
+  if (!category || !category.isActive) {
+    // If not found or inactive, fallback to any active category if available
+    category = await FollowupCategory.findOne({ isActive: true });
+  }
+  if (!category) throw ApiError.badRequest('Invalid or inactive followup category');
+
+  const commentText = data.comment || data.remarks || '';
 
   const nfd = new Date(data.nextFollowupDate);
   const now = new Date();
@@ -67,8 +85,8 @@ export const createFollowup = async (leadId, actor, data, files = []) => {
   // 4. Create followup
   const followup = await Followup.create({
     lead: leadId,
-    category: data.category,
-    comment: data.comment,
+    category: category._id,
+    comment: commentText,
     nextFollowupDate: nfd,
     attachments,
     ...policy,
@@ -232,27 +250,47 @@ export const deleteFollowup = async (followupId, actor) => {
 };
 
 /**
- * Get followups by filter (e.g. today, overdue, upcoming)
+ * Get followups by filter (e.g. today, overdue, upcoming, all)
  */
 export const getMyFollowups = async (actor, query = {}) => {
   const now = new Date();
-  const filter = { isDeleted: false };
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
 
+  const baseFilter = { isDeleted: false };
   if (actor.role !== 'admin') {
-    filter.createdBy = actor._id;
+    baseFilter.createdBy = actor._id;
   } else if (query.userId) {
-    filter.createdBy = query.userId;
+    baseFilter.createdBy = query.userId;
   }
 
-  if (query.when === 'overdue') {
-    filter.nextFollowupDate = { $lt: now };
+  // Build main filter based on `when`
+  const filter = { ...baseFilter };
+  const when = query.when || 'today';
+
+  if (when === 'today') {
+    filter.nextFollowupDate = { $gte: todayStart, $lte: todayEnd };
+  } else if (when === 'overdue') {
+    filter.nextFollowupDate = { $lt: todayStart };
     filter.completedAt = null;
+  } else if (when === 'upcoming') {
+    filter.nextFollowupDate = { $gt: todayEnd };
   }
+  // 'all' → no date filter
 
-  return Followup.find(filter)
+  const followups = await Followup.find(filter)
     .populate('lead', 'leadNo customerName mobile companyName status')
     .populate('category', 'name')
     .sort({ nextFollowupDate: 1 })
-    .limit(50)
+    .limit(100)
     .lean();
+
+  // Compute counts for badges
+  const [todayCount, overdueCount] = await Promise.all([
+    Followup.countDocuments({ ...baseFilter, nextFollowupDate: { $gte: todayStart, $lte: todayEnd } }),
+    Followup.countDocuments({ ...baseFilter, nextFollowupDate: { $lt: todayStart }, completedAt: null }),
+  ]);
+
+  return { followups, counts: { today: todayCount, overdue: overdueCount } };
 };
+

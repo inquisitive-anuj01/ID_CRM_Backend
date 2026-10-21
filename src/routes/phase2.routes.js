@@ -37,6 +37,9 @@ router.delete('/meetings/:id', p2Ctrl.deleteMeeting);
 
 // Customers
 router.get('/customers', p2Ctrl.getCustomers);
+router.post('/customers', p2Ctrl.createCustomer);
+router.patch('/customers/:id', p2Ctrl.updateCustomer);
+router.delete('/customers/:id', p2Ctrl.deleteCustomer);
 router.post('/customers/from-lead/:leadId', p2Ctrl.convertToCustomer);
 
 // Calendar

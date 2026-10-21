@@ -85,3 +85,23 @@ export const updateSetting = asyncHandler(async (req, res) => {
   const data = await masterService.updateSetting(req.body);
   ApiResponse.ok(res, 'Settings updated', data);
 });
+
+export const deleteStatus = asyncHandler(async (req, res) => {
+  const data = await masterService.deleteStatus(req.params.id);
+  ApiResponse.ok(res, 'Status deleted', data);
+});
+
+export const deleteSource = asyncHandler(async (req, res) => {
+  const data = await masterService.deleteSource(req.params.id);
+  ApiResponse.ok(res, 'Source deleted', data);
+});
+
+export const deleteLabel = asyncHandler(async (req, res) => {
+  const data = await masterService.deleteLabel(req.params.id);
+  ApiResponse.ok(res, 'Label deleted', data);
+});
+
+export const deleteCategory = asyncHandler(async (req, res) => {
+  const data = await masterService.deleteCategory(req.params.id);
+  ApiResponse.ok(res, 'Category deleted', data);
+});
