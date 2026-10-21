@@ -30,18 +30,24 @@ router.delete('/statuses/:id', authorize('admin'), masterCtrl.deleteStatus);
 // Sources
 router.get('/sources', masterCtrl.getSources);
 router.post('/sources', authorize('admin'), validate({ body: createSourceSchema }), masterCtrl.createSource);
+router.patch('/sources/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderSources);
+router.post('/sources/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderSources);
 router.patch('/sources/:id', authorize('admin'), validate({ body: updateSourceSchema }), masterCtrl.updateSource);
 router.delete('/sources/:id', authorize('admin'), masterCtrl.deleteSource);
 
 // Labels
 router.get('/labels', masterCtrl.getLabels);
 router.post('/labels', authorize('admin'), validate({ body: createLabelSchema }), masterCtrl.createLabel);
+router.patch('/labels/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderLabels);
+router.post('/labels/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderLabels);
 router.patch('/labels/:id', authorize('admin'), validate({ body: updateLabelSchema }), masterCtrl.updateLabel);
 router.delete('/labels/:id', authorize('admin'), masterCtrl.deleteLabel);
 
 // Categories
 router.get('/followup-categories', masterCtrl.getCategories);
 router.post('/followup-categories', authorize('admin'), validate({ body: createCategorySchema }), masterCtrl.createCategory);
+router.patch('/followup-categories/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderCategories);
+router.post('/followup-categories/reorder', authorize('admin'), validate({ body: reorderStatusSchema }), masterCtrl.reorderCategories);
 router.patch('/followup-categories/:id', authorize('admin'), validate({ body: updateCategorySchema }), masterCtrl.updateCategory);
 router.delete('/followup-categories/:id', authorize('admin'), masterCtrl.deleteCategory);
 

@@ -10,6 +10,7 @@ export const createStatusSchema = z.object({
 });
 
 export const updateStatusSchema = z.object({
+  key: z.string().min(1).trim().toLowerCase().optional(),
   name: z.string().min(1).trim().optional(),
   color: z.string().optional(),
   order: z.number().optional(),
@@ -26,6 +27,8 @@ export const reorderStatusSchema = z.object({
     })
   ),
 });
+
+export const reorderGenericSchema = reorderStatusSchema;
 
 export const createSourceSchema = z.object({
   name: z.string().min(1).trim(),

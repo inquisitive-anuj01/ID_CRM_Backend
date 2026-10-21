@@ -41,6 +41,11 @@ export const updateSource = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, 'Source updated', data);
 });
 
+export const reorderSources = asyncHandler(async (req, res) => {
+  const data = await masterService.reorderSources(req.body.order);
+  ApiResponse.ok(res, 'Sources reordered', data);
+});
+
 // Labels
 export const getLabels = asyncHandler(async (req, res) => {
   const includeAll = req.user?.role === 'admin' && req.query.all === 'true';
@@ -58,6 +63,11 @@ export const updateLabel = asyncHandler(async (req, res) => {
   ApiResponse.ok(res, 'Label updated', data);
 });
 
+export const reorderLabels = asyncHandler(async (req, res) => {
+  const data = await masterService.reorderLabels(req.body.order);
+  ApiResponse.ok(res, 'Labels reordered', data);
+});
+
 // Followup Categories
 export const getCategories = asyncHandler(async (req, res) => {
   const includeAll = req.user?.role === 'admin' && req.query.all === 'true';
@@ -73,6 +83,11 @@ export const createCategory = asyncHandler(async (req, res) => {
 export const updateCategory = asyncHandler(async (req, res) => {
   const data = await masterService.updateCategory(req.params.id, req.body);
   ApiResponse.ok(res, 'Category updated', data);
+});
+
+export const reorderCategories = asyncHandler(async (req, res) => {
+  const data = await masterService.reorderCategories(req.body.order);
+  ApiResponse.ok(res, 'Categories reordered', data);
 });
 
 // Settings
