@@ -42,7 +42,7 @@ app.use(
   })
 );
 
-// ─── Root Route ──────────────────────────────────────────────────────────────
+// ─── Root & Health Routes ───────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -54,6 +54,32 @@ app.get('/', (req, res) => {
       docs: '/api/v1',
     },
   });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'ID CRM API is healthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ─── Auto DB Connection Middleware (Serverless & Persistent) ─────────────────
+import { connectDB } from './config/db.js';
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: err.message,
+    });
+  }
 });
 
 // ─── Body parsing ──────────────────────────────────────────────────────────────
