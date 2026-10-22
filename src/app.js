@@ -6,11 +6,30 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { mongoSanitizer } from './middlewares/mongoSanitize.js';
 import hpp from 'hpp';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 import { env } from './config/env.js';
 import { notFound } from './middlewares/notFound.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import apiRouter from './routes/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve the frontend dist directory (backend/src/../../../frontend/dist  OR  backend/public)
+// On Hostinger: place frontend dist contents into backend/public folder
+// Locally: uses the sibling frontend/dist folder
+const FRONTEND_DIST = (() => {
+  // Priority 1: backend/public (production – Hostinger)
+  const publicDir = path.join(__dirname, '..', 'public');
+  if (fs.existsSync(path.join(publicDir, 'index.html'))) return publicDir;
+  // Priority 2: sibling frontend/dist (local dev convenience)
+  const siblingDist = path.join(__dirname, '..', '..', '..', 'frontend', 'dist');
+  if (fs.existsSync(path.join(siblingDist, 'index.html'))) return siblingDist;
+  return null;
+})();
 
 const app = express();
 
@@ -23,6 +42,8 @@ app.use(
       if (!origin) return callback(null, true);
       const allowed = [
         env.CLIENT_URL,
+        'https://crm.inquisitivedigital.com',
+        'http://crm.inquisitivedigital.com',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:5174',
@@ -42,20 +63,7 @@ app.use(
   })
 );
 
-// ─── Root & Health Routes ───────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'ID CRM Backend API is active',
-    version: '1.0.0',
-    status: 'online',
-    endpoints: {
-      health: '/api/v1/health',
-      docs: '/api/v1',
-    },
-  });
-});
-
+// ─── Health Route ────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -103,8 +111,31 @@ app.use('/uploads', express.static(env.UPLOAD_DIR));
 // ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/api/v1', apiRouter);
 
-// ─── 404 + error handler ─────────────────────────────────────────────────────
-app.use(notFound);
+// ─── Serve React frontend (production) ───────────────────────────────────────
+if (FRONTEND_DIST) {
+  // Serve static assets (JS, CSS, images, etc.)
+  app.use(express.static(FRONTEND_DIST));
+
+  // SPA catch-all: for any non-API route, return index.html so React Router works
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+} else {
+  // No frontend build found – return API info at root
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'ID CRM Backend API is active',
+      version: '1.0.0',
+      status: 'online',
+      endpoints: { health: '/health', api: '/api/v1' },
+    });
+  });
+
+  // ─── 404 + error handler ───────────────────────────────────────────────────
+  app.use(notFound);
+}
+
 app.use(errorHandler);
 
 export default app;

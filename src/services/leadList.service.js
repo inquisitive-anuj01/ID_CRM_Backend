@@ -17,9 +17,10 @@ import ExcelJS from 'exceljs';
 export const buildLeadQueryFilter = (user, query) => {
   const filter = { ...leadScope(user) };
 
-  // Text search
-  if (query.q) {
-    const regex = { $regex: query.q.trim(), $options: 'i' };
+  // Text search — accept both ?q= and ?search= from frontend
+  const searchText = query.q || query.search;
+  if (searchText) {
+    const regex = { $regex: searchText.trim(), $options: 'i' };
     filter.$or = [
       { customerName: regex },
       { companyName: regex },

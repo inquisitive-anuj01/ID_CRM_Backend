@@ -115,7 +115,7 @@ export const getLeadById = async (leadId) => {
  */
 export const updateLead = async (lead, actor, data) => {
   const changes = [];
-  const fields = ['customerName', 'companyName', 'address', 'comment', 'reference', 'leadDate', 'source'];
+  const fields = ['customerName', 'email', 'companyName', 'address', 'comment', 'reference', 'leadDate', 'source'];
 
   fields.forEach((field) => {
     if (data[field] !== undefined && String(lead[field]) !== String(data[field])) {
