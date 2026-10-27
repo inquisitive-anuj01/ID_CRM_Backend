@@ -115,23 +115,66 @@ export const getLeadById = async (leadId) => {
  */
 export const updateLead = async (lead, actor, data) => {
   const changes = [];
-  const fields = ['customerName', 'email', 'companyName', 'address', 'comment', 'reference', 'leadDate', 'source'];
+  const textFields = ['customerName', 'email', 'companyName', 'address', 'comment', 'reference', 'leadDate'];
 
-  fields.forEach((field) => {
-    if (data[field] !== undefined && String(lead[field]) !== String(data[field])) {
-      changes.push({ field, from: lead[field], to: data[field] });
-      lead[field] = data[field];
+  textFields.forEach((field) => {
+    if (data[field] !== undefined) {
+      const currentVal = lead[field] !== undefined && lead[field] !== null ? String(lead[field]) : '';
+      const newVal = data[field] !== undefined && data[field] !== null ? String(data[field]) : '';
+      if (currentVal !== newVal) {
+        changes.push({ field, from: lead[field], to: data[field] });
+        lead[field] = data[field] || undefined;
+      }
     }
   });
 
+  if (data.source !== undefined) {
+    const currentSource = lead.source ? String(lead.source) : '';
+    const newSource = data.source ? String(data.source) : '';
+    if (currentSource !== newSource) {
+      changes.push({ field: 'source', from: lead.source, to: data.source || null });
+      lead.source = data.source ? data.source : null;
+    }
+  }
+
   if (data.mobile) {
     const { countryCode, mobile, mobileFull } = formatMobile(data.countryCode || lead.countryCode, data.mobile);
-    if (lead.mobile !== mobile) {
-      changes.push({ field: 'mobile', from: lead.mobile, to: mobile });
+    if (lead.mobile !== mobile || lead.countryCode !== countryCode) {
+      changes.push({ field: 'mobile', from: `${lead.countryCode} ${lead.mobile}`, to: `${countryCode} ${mobile}` });
       lead.mobile = mobile;
       lead.countryCode = countryCode;
       lead.mobileFull = mobileFull;
     }
+  }
+
+  if (data.status && data.status !== lead.status) {
+    changes.push({ field: 'status', from: lead.status, to: data.status });
+    lead.status = data.status;
+    lead.statusChangedAt = new Date();
+    if (TERMINAL_STATUSES.includes(data.status)) {
+      lead.closedAt = new Date();
+    }
+  }
+
+  if (data.assignedTo && String(data.assignedTo) !== String(lead.assignedTo || '')) {
+    changes.push({ field: 'assignedTo', from: lead.assignedTo, to: data.assignedTo });
+    lead.assignedTo = data.assignedTo;
+
+    // Send notification to newly assigned user
+    try {
+      await createNotification({
+        userId: data.assignedTo,
+        type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+        title: 'Lead Reassigned',
+        message: `Lead ${lead.customerName} (${lead.leadNo}) has been reassigned to you`,
+        leadId: lead._id,
+      });
+    } catch {}
+  }
+
+  if (data.labels !== undefined) {
+    lead.labels = data.labels;
+    changes.push({ field: 'labels', from: 'updated', to: 'updated' });
   }
 
   if (data.estimateAmount !== undefined && data.estimateAmount !== lead.estimateAmount) {

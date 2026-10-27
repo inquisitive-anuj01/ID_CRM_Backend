@@ -22,12 +22,18 @@ const __dirname = path.dirname(__filename);
 // On Hostinger: place frontend dist contents into backend/public folder
 // Locally: uses the sibling frontend/dist folder
 const FRONTEND_DIST = (() => {
-  // Priority 1: backend/public (production – Hostinger)
+  // Priority 1: backend/public/index.html  (production – contents copied directly into public/)
   const publicDir = path.join(__dirname, '..', 'public');
   if (fs.existsSync(path.join(publicDir, 'index.html'))) return publicDir;
-  // Priority 2: sibling frontend/dist (local dev convenience)
+
+  // Priority 2: backend/public/dist/index.html  (production – dist folder uploaded inside public/)
+  const publicDistDir = path.join(__dirname, '..', 'public', 'dist');
+  if (fs.existsSync(path.join(publicDistDir, 'index.html'))) return publicDistDir;
+
+  // Priority 3: sibling frontend/dist (local dev convenience)
   const siblingDist = path.join(__dirname, '..', '..', '..', 'frontend', 'dist');
   if (fs.existsSync(path.join(siblingDist, 'index.html'))) return siblingDist;
+
   return null;
 })();
 
@@ -117,7 +123,8 @@ if (FRONTEND_DIST) {
   app.use(express.static(FRONTEND_DIST));
 
   // SPA catch-all: for any non-API route, return index.html so React Router works
-  app.get('*', (req, res) => {
+  // Note: Express 5 requires named wildcard — bare '*' is not allowed
+  app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
   });
 } else {

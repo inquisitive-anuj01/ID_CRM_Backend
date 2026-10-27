@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('production').catch('production'),
   PORT: z.coerce.number().default(8000),
   MONGO_URI: z.string().default('mongodb+srv://InquisitiveAnuj:Inquisitive07Anuj@cluster0.ffoew59.mongodb.net/ID_CRM?retryWrites=true&w=majority'),
   CLIENT_URL: z.string().default('http://localhost:5173'),

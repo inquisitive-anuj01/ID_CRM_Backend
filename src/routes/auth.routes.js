@@ -20,5 +20,6 @@ router.post('/refresh', authCtrl.refresh);
 router.post('/logout', auth, authCtrl.logout);
 router.get('/me', auth, authCtrl.me);
 router.patch('/change-password', auth, validate({ body: changePasswordSchema }), authCtrl.changePassword);
+router.post('/change-password', auth, validate({ body: changePasswordSchema }), authCtrl.changePassword);
 
 export default router;

@@ -1,5 +1,6 @@
 import User from '../models/User.model.js';
 import Lead from '../models/Lead.model.js';
+import bcrypt from 'bcryptjs';
 import { ApiError } from '../utils/ApiError.js';
 import { parsePagination, buildMeta } from '../utils/pagination.js';
 
@@ -42,6 +43,22 @@ export const createUser = async (data) => {
 };
 
 export const updateUser = async (id, data) => {
+  if (data.email) {
+    const existing = await User.findOne({
+      email: data.email.toLowerCase(),
+      _id: { $ne: id },
+    });
+    if (existing) throw ApiError.conflict('Email already in use');
+    data.email = data.email.toLowerCase();
+  }
+
+  if (data.password && data.password.trim().length > 0) {
+    data.password = await bcrypt.hash(data.password, 12);
+    data.passwordChangedAt = new Date();
+  } else {
+    delete data.password;
+  }
+
   const user = await User.findByIdAndUpdate(id, data, { new: true, runValidators: true }).select('-password -refreshTokenHash -passwordChangedAt');
   if (!user) throw ApiError.notFound('User not found');
   return user;

@@ -31,13 +31,23 @@ export const updateLeadSchema = z.object({
   customerName: z.string().min(1).trim().optional(),
   countryCode: z.string().optional(),
   mobile: z.string().min(5).trim().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  companyName: z.string().trim().optional(),
-  address: z.string().trim().optional(),
-  comment: z.string().optional(),
-  reference: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')).nullable(),
+  companyName: z.string().trim().optional().or(z.literal('')).nullable(),
+  address: z.string().trim().optional().or(z.literal('')).nullable(),
+  comment: z.string().optional().or(z.literal('')).nullable(),
+  reference: z.string().optional().or(z.literal('')).nullable(),
   leadDate: z.string().datetime().optional().or(z.string().date().optional()),
-  source: z.string().optional(),
+  source: z.string().optional().or(z.literal('')).nullable(),
+  status: z.string().optional(),
+  assignedTo: z.string().optional().or(z.literal('')).nullable(),
+  labels: z
+    .array(
+      z.object({
+        label: z.string(),
+        amount: z.number().nonnegative().default(0),
+      })
+    )
+    .optional(),
   estimateAmount: z.number().nonnegative().optional(),
   rating: z.number().min(0).max(5).optional(),
 });

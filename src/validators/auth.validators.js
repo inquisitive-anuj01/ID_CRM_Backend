@@ -5,7 +5,18 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().optional(),
+    oldPassword: z.string().optional(),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  })
+  .refine((data) => data.currentPassword || data.oldPassword, {
+    message: 'Current password is required',
+    path: ['currentPassword'],
+  })
+  .transform((data) => ({
+    currentPassword: data.currentPassword || data.oldPassword,
+    newPassword: data.newPassword,
+  }));
+

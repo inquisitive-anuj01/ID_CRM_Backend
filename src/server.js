@@ -14,10 +14,16 @@ initSocket(httpServer);
 const start = async () => {
   await connectDB();
 
-  // Run seeders in development on first boot
-  if (env.NODE_ENV === 'development') {
-    const { runSeeders } = await import('./seeders/index.js');
-    await runSeeders();
+  // Create initial admin only if user collection is completely empty
+  try {
+    const { default: User } = await import('./models/User.model.js');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      const { seedAdmin } = await import('./seeders/admin.seeder.js');
+      await seedAdmin();
+    }
+  } catch (err) {
+    console.error('⚠️  Initial admin check warning:', err.message);
   }
 
   // Start background cron jobs
