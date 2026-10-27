@@ -3,6 +3,7 @@ import { HISTORY_ACTIONS } from '../config/constants.js';
 
 const leadHistorySchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     lead: { type: Schema.Types.ObjectId, ref: 'Lead', required: true, index: true },
     actor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     action: {
@@ -23,6 +24,7 @@ const leadHistorySchema = new Schema(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
+leadHistorySchema.index({ workspace: 1, lead: 1, createdAt: -1 });
 leadHistorySchema.index({ lead: 1, createdAt: -1 });
 
 const LeadHistory = mongoose.model('LeadHistory', leadHistorySchema);

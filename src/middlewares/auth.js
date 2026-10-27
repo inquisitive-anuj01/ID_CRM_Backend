@@ -12,9 +12,12 @@ export const auth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
 
-    const user = await User.findById(decoded.sub).lean();
+    const user = await User.findById(decoded.sub).populate('workspace').lean();
     if (!user) throw ApiError.unauthorized('User not found');
     if (!user.isActive) throw ApiError.unauthorized('Account is deactivated');
+    if (!user.workspace || !user.workspace.isActive) {
+      throw ApiError.unauthorized('Workspace not found or deactivated');
+    }
 
     // Reject token if password changed after issuance
     if (user.passwordChangedAt) {
@@ -23,6 +26,7 @@ export const auth = async (req, res, next) => {
     }
 
     req.user = user;
+    req.workspace = user.workspace;
     next();
   } catch (err) {
     next(err);

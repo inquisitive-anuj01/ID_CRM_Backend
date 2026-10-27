@@ -14,12 +14,12 @@ export const createTask = asyncHandler(async (req, res) => {
 });
 
 export const updateTask = asyncHandler(async (req, res) => {
-  const data = await phase2Service.updateTask(req.params.id, req.body);
+  const data = await phase2Service.updateTask(req.params.id, req.body, req.user);
   ApiResponse.ok(res, 'Task updated', data);
 });
 
 export const deleteTask = asyncHandler(async (req, res) => {
-  await phase2Service.deleteTask(req.params.id);
+  await phase2Service.deleteTask(req.params.id, req.user);
   ApiResponse.ok(res, 'Task deleted');
 });
 
@@ -98,18 +98,18 @@ export const createMeeting = asyncHandler(async (req, res) => {
 });
 
 export const updateMeeting = asyncHandler(async (req, res) => {
-  const data = await phase2Service.updateMeeting(req.params.id, req.body);
+  const data = await phase2Service.updateMeeting(req.params.id, req.body, req.user);
   ApiResponse.ok(res, 'Meeting updated', data);
 });
 
 export const deleteMeeting = asyncHandler(async (req, res) => {
-  await phase2Service.deleteMeeting(req.params.id);
+  await phase2Service.deleteMeeting(req.params.id, req.user);
   ApiResponse.ok(res, 'Meeting deleted');
 });
 
 // Customers
 export const getCustomers = asyncHandler(async (req, res) => {
-  const data = await phase2Service.listCustomers(req.query);
+  const data = await phase2Service.listCustomers(req.user, req.query);
   ApiResponse.ok(res, 'Customers fetched', data);
 });
 
@@ -119,17 +119,17 @@ export const createCustomer = asyncHandler(async (req, res) => {
 });
 
 export const updateCustomer = asyncHandler(async (req, res) => {
-  const data = await phase2Service.updateCustomer(req.params.id, req.body);
+  const data = await phase2Service.updateCustomer(req.params.id, req.body, req.user);
   ApiResponse.ok(res, 'Customer updated', data);
 });
 
 export const deleteCustomer = asyncHandler(async (req, res) => {
-  await phase2Service.deleteCustomer(req.params.id);
+  await phase2Service.deleteCustomer(req.params.id, req.user);
   ApiResponse.ok(res, 'Customer deleted');
 });
 
 export const convertToCustomer = asyncHandler(async (req, res) => {
-  const data = await phase2Service.convertLeadToCustomer(req.params.leadId);
+  const data = await phase2Service.convertLeadToCustomer(req.params.leadId, req.user);
   ApiResponse.created(res, 'Lead converted to customer', data);
 });
 

@@ -279,10 +279,12 @@ export const importLeads = async (fileBuffer, actor) => {
     }
 
     try {
+      const wsId = actor.workspace?._id || actor.workspace;
       const { countryCode, mobile, mobileFull } = formatMobile('+91', item.mobile);
-      const leadNo = await generateLeadNumber();
+      const leadNo = await generateLeadNumber(wsId);
 
       const lead = await Lead.create({
+        workspace: wsId,
         leadNo,
         customerName: item.customerName,
         countryCode,

@@ -11,7 +11,8 @@ import {
 import { TERMINAL_STATUSES, LEAD_STATUS } from '../config/constants.js';
 
 export const getDashboardSummary = async (user, queryUserId) => {
-  const targetUser = user.role === 'admin' && queryUserId ? { _id: queryUserId, role: 'staff' } : user;
+  const wsId = user.workspace?._id || user.workspace;
+  const targetUser = user.role === 'admin' && queryUserId ? { _id: queryUserId, role: 'staff', workspace: wsId } : user;
   const scope = leadScope(targetUser);
 
   const todayStart = startOfToday();
@@ -37,6 +38,7 @@ export const getDashboardSummary = async (user, queryUserId) => {
   const completedFilter = {
     isDeleted: false,
     completedAt: { $gte: todayStart, $lte: todayEnd },
+    ...(wsId && { workspace: wsId }),
   };
   if (targetUser.role !== 'admin') {
     completedFilter.createdBy = targetUser._id;

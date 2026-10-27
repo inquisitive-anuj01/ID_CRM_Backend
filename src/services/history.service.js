@@ -1,9 +1,16 @@
 import LeadHistory from '../models/LeadHistory.model.js';
 import { parsePagination, buildMeta } from '../utils/pagination.js';
 
-export const logHistory = async ({ leadId, actorId, action, changes = [], note = '', meta = {} }) => {
+export const logHistory = async ({ leadId, actorId, action, changes = [], note = '', meta = {}, workspaceId = null }) => {
   try {
+    let ws = workspaceId;
+    if (!ws && leadId) {
+      const Lead = (await import('../models/Lead.model.js')).default;
+      const l = await Lead.findById(leadId).select('workspace');
+      if (l) ws = l.workspace;
+    }
     return await LeadHistory.create({
+      workspace: ws,
       lead: leadId,
       actor: actorId,
       action,

@@ -14,8 +14,10 @@ initSocket(httpServer);
 const start = async () => {
   await connectDB();
 
-  // Create initial admin only if user collection is completely empty
+  // Ensure workspace migration and initial admin
   try {
+    const { runWorkspaceMigration } = await import('./seeders/migrateToWorkspace.js');
+    await runWorkspaceMigration();
     const { default: User } = await import('./models/User.model.js');
     const userCount = await User.countDocuments();
     if (userCount === 0) {
@@ -23,7 +25,7 @@ const start = async () => {
       await seedAdmin();
     }
   } catch (err) {
-    console.error('⚠️  Initial admin check warning:', err.message);
+    console.error('⚠️  Workspace / admin init warning:', err.message);
   }
 
   // Start background cron jobs

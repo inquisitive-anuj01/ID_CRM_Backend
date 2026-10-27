@@ -3,10 +3,16 @@
  * Admin → all non-deleted leads.
  * Staff → only leads they created OR are assigned to.
  */
-export const leadScope = (user) =>
-  user.role === 'admin'
-    ? { isDeleted: false }
+export const leadScope = (user) => {
+  const wsId = user.workspace?._id || user.workspace;
+  const base = { isDeleted: false };
+  if (wsId) {
+    base.workspace = wsId;
+  }
+  return user.role === 'admin'
+    ? base
     : {
-        isDeleted: false,
+        ...base,
         $or: [{ createdBy: user._id }, { assignedTo: user._id }],
       };
+};

@@ -2,9 +2,16 @@ import Notification from '../models/Notification.model.js';
 import { parsePagination, buildMeta } from '../utils/pagination.js';
 import { emitToUser } from '../sockets/index.js';
 
-export const createNotification = async ({ userId, type, title, body, link = {} }) => {
+export const createNotification = async ({ userId, type, title, body, link = {}, workspaceId = null }) => {
   try {
+    let ws = workspaceId;
+    if (!ws && userId) {
+      const User = (await import('../models/User.model.js')).default;
+      const u = await User.findById(userId).select('workspace');
+      if (u) ws = u.workspace;
+    }
     const notification = await Notification.create({
+      workspace: ws,
       user: userId,
       type,
       title,

@@ -5,16 +5,16 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 const { REFRESH_COOKIE_OPTS } = authService;
 
 export const login = asyncHandler(async (req, res) => {
-  const { user, accessToken, refreshToken } = await authService.login(req.body);
+  const { user, workspace, accessToken, refreshToken } = await authService.login(req.body);
   res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
-  ApiResponse.ok(res, 'Login successful', { user, accessToken });
+  ApiResponse.ok(res, 'Login successful', { user, workspace, accessToken });
 });
 
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies.refreshToken;
-  const { accessToken, refreshToken, user } = await authService.refreshTokens(token);
+  const { accessToken, refreshToken, user, workspace } = await authService.refreshTokens(token);
   res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
-  ApiResponse.ok(res, 'Token refreshed', { accessToken, user });
+  ApiResponse.ok(res, 'Token refreshed', { accessToken, user, workspace });
 });
 
 export const logout = asyncHandler(async (req, res) => {
@@ -24,7 +24,7 @@ export const logout = asyncHandler(async (req, res) => {
 });
 
 export const me = asyncHandler(async (req, res) => {
-  ApiResponse.ok(res, 'Current user', req.user);
+  ApiResponse.ok(res, 'Current user', { ...req.user, workspace: req.workspace });
 });
 
 export const changePassword = asyncHandler(async (req, res) => {

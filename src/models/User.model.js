@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     mobile: { type: String },
     password: { type: String, required: true, select: false },
     role: { type: String, enum: ['admin', 'staff', 'manager'], default: 'staff', index: true },
@@ -17,6 +18,8 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ workspace: 1, email: 1 }, { unique: true });
 
 // ─── Hash password before save ─────────────────────────────────────────────
 userSchema.pre('save', async function () {

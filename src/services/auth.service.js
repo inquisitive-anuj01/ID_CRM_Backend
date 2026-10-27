@@ -18,23 +18,42 @@ const REFRESH_COOKIE_OPTS = {
 };
 
 export const login = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select('+password +refreshTokenHash');
-  if (!user) throw ApiError.unauthorized('Invalid email or password');
-  if (!user.isActive) throw ApiError.unauthorized('Account is deactivated');
+  // Find ALL users with this email across all workspaces.
+  // The same email can exist in multiple workspaces (different companies).
+  // We match by password to determine which workspace this login belongs to.
+  const users = await User.find({ email: email.toLowerCase().trim() })
+    .select('+password +refreshTokenHash')
+    .populate('workspace');
 
-  const isMatch = await user.comparePassword(password);
-  if (!isMatch) throw ApiError.unauthorized('Invalid email or password');
+  if (!users || users.length === 0) throw ApiError.unauthorized('Invalid email or password');
 
-  const payload = { sub: user._id.toString(), role: user.role };
+  // Iterate and find the user whose password matches
+  let matchedUser = null;
+  for (const u of users) {
+    if (!u.isActive) continue;                              // skip deactivated accounts
+    if (!u.workspace || !u.workspace.isActive) continue;   // skip deactivated workspaces
+    const isMatch = await u.comparePassword(password);
+    if (isMatch) {
+      matchedUser = u;
+      break;
+    }
+  }
+
+  if (!matchedUser) throw ApiError.unauthorized('Invalid email or password');
+
+  const payload = {
+    sub: matchedUser._id.toString(),
+    role: matchedUser.role,
+    workspace: matchedUser.workspace._id.toString(),
+  };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
-  // Store hashed refresh token
-  user.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
-  user.lastLoginAt = new Date();
-  await user.save({ validateBeforeSave: false });
+  matchedUser.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+  matchedUser.lastLoginAt = new Date();
+  await matchedUser.save({ validateBeforeSave: false });
 
-  return { user: user.toSafeObject(), accessToken, refreshToken };
+  return { user: matchedUser.toSafeObject(), workspace: matchedUser.workspace, accessToken, refreshToken };
 };
 
 export const refreshTokens = async (oldRefreshToken) => {
@@ -47,21 +66,22 @@ export const refreshTokens = async (oldRefreshToken) => {
     throw ApiError.unauthorized('Invalid or expired refresh token');
   }
 
-  const user = await User.findById(decoded.sub).select('+refreshTokenHash');
+  const user = await User.findById(decoded.sub).select('+refreshTokenHash').populate('workspace');
   if (!user || !user.isActive) throw ApiError.unauthorized('User not found or inactive');
+  if (!user.workspace || !user.workspace.isActive) throw ApiError.unauthorized('Workspace not found or deactivated');
   if (!user.refreshTokenHash) throw ApiError.unauthorized('Not logged in');
 
   const valid = await bcrypt.compare(oldRefreshToken, user.refreshTokenHash);
   if (!valid) throw ApiError.unauthorized('Invalid refresh token');
 
-  const payload = { sub: user._id.toString(), role: user.role };
+  const payload = { sub: user._id.toString(), role: user.role, workspace: user.workspace._id.toString() };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
   user.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
   await user.save({ validateBeforeSave: false });
 
-  return { accessToken, refreshToken, user: user.toSafeObject() };
+  return { accessToken, refreshToken, user: user.toSafeObject(), workspace: user.workspace };
 };
 
 export const logout = async (userId) => {

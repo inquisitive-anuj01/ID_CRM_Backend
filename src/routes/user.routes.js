@@ -30,5 +30,6 @@ router.patch('/:id/deactivate', authorize('admin'), userCtrl.deactivateUser);
 router.patch('/:id/reset-password', authorize('admin'), validate({ body: resetPasswordSchema }), userCtrl.resetPassword);
 router.post('/:id/reset-password', authorize('admin'), validate({ body: resetPasswordSchema }), userCtrl.resetPassword);
 router.post('/:id/reassign-leads', authorize('admin'), validate({ body: reassignLeadsSchema }), userCtrl.reassignLeads);
+router.delete('/:id', authorize('admin'), userCtrl.deleteUser);
 
 export default router;

@@ -6,6 +6,8 @@ import User from '../models/User.model.js';
 import { leadScope } from '../utils/scope.js';
 import { TERMINAL_STATUSES } from '../config/constants.js';
 
+const getWsId = (user) => user?.workspace?._id || user?.workspace;
+
 const buildDateFilter = (query) => {
   const filter = {};
   if (query.dateFrom || query.dateTo) {
@@ -17,6 +19,7 @@ const buildDateFilter = (query) => {
 };
 
 export const getLeadsSummaryReport = async (user, query) => {
+  const wsId = getWsId(user);
   const scope = leadScope(user);
   const dateFilter = buildDateFilter(query);
 
@@ -32,7 +35,7 @@ export const getLeadsSummaryReport = async (user, query) => {
     },
   ]);
 
-  const statuses = await LeadStatus.find({ isActive: true }).sort({ order: 1 }).lean();
+  const statuses = await LeadStatus.find({ isActive: true, ...(wsId && { workspace: wsId }) }).sort({ order: 1 }).lean();
   const map = {};
   stats.forEach((s) => (map[s._id] = s));
 
@@ -45,6 +48,7 @@ export const getLeadsSummaryReport = async (user, query) => {
 };
 
 export const getSourceReport = async (user, query) => {
+  const wsId = getWsId(user);
   const scope = leadScope(user);
   const dateFilter = buildDateFilter(query);
 
@@ -62,7 +66,7 @@ export const getSourceReport = async (user, query) => {
     },
   ]);
 
-  const sources = await Source.find({ isActive: true }).lean();
+  const sources = await Source.find({ isActive: true, ...(wsId && { workspace: wsId }) }).lean();
   const sourceMap = {};
   sources.forEach((s) => (sourceMap[s._id.toString()] = s));
 
@@ -80,11 +84,12 @@ export const getUserPerformanceReport = async (user, query) => {
     return [];
   }
 
+  const wsId = getWsId(user);
   const dateFilter = buildDateFilter(query);
 
   const [leadStats, followupStats, users] = await Promise.all([
     Lead.aggregate([
-      { $match: { isDeleted: false, ...dateFilter } },
+      { $match: { isDeleted: false, ...dateFilter, ...(wsId && { workspace: wsId }) } },
       {
         $group: {
           _id: '$assignedTo',
@@ -95,7 +100,7 @@ export const getUserPerformanceReport = async (user, query) => {
       },
     ]),
     Followup.aggregate([
-      { $match: { isDeleted: false, ...dateFilter } },
+      { $match: { isDeleted: false, ...dateFilter, ...(wsId && { workspace: wsId }) } },
       {
         $group: {
           _id: '$createdBy',
@@ -104,7 +109,7 @@ export const getUserPerformanceReport = async (user, query) => {
         },
       },
     ]),
-    User.find({ isActive: true }).select('name email avatar designation').lean(),
+    User.find({ isActive: true, ...(wsId && { workspace: wsId }) }).select('name email avatar designation').lean(),
   ]);
 
   const leadMap = {};
@@ -128,8 +133,9 @@ export const getUserPerformanceReport = async (user, query) => {
 };
 
 export const getFollowupComplianceReport = async (user, query) => {
+  const wsId = getWsId(user);
   const dateFilter = buildDateFilter(query);
-  const filter = { isDeleted: false, ...dateFilter };
+  const filter = { isDeleted: false, ...dateFilter, ...(wsId && { workspace: wsId }) };
 
   if (user.role !== 'admin') {
     filter.createdBy = user._id;

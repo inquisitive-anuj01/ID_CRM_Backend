@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 const meetingSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     title: { type: String, required: true, trim: true },
     description: { type: String },
     startAt: { type: Date, required: true },
@@ -15,6 +16,8 @@ const meetingSchema = new Schema(
   { timestamps: true }
 );
 
+meetingSchema.index({ workspace: 1, attendees: 1, startAt: 1 });
+meetingSchema.index({ workspace: 1, lead: 1 });
 meetingSchema.index({ attendees: 1, startAt: 1 });
 meetingSchema.index({ lead: 1 });
 

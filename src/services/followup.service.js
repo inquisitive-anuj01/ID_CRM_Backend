@@ -53,7 +53,8 @@ export const createFollowup = async (leadId, actor, data, files = []) => {
     throw ApiError.badRequest('Next followup date cannot be in the past');
   }
 
-  const setting = (await Setting.findOne({ key: 'followup' })) || { allowedMinutes: 30, graceMinutes: 0 };
+  const wsId = actor.workspace?._id || actor.workspace || lead.workspace;
+  const setting = (await Setting.findOne({ workspace: wsId, key: 'followup' })) || (await Setting.findOne({ key: 'followup' })) || { allowedMinutes: 30, graceMinutes: 0 };
 
   // 1. Mark previous active followup as completed
   const previousFollowup = await Followup.findOne({
@@ -84,6 +85,7 @@ export const createFollowup = async (leadId, actor, data, files = []) => {
 
   // 4. Create followup
   const followup = await Followup.create({
+    workspace: wsId,
     lead: leadId,
     category: category._id,
     comment: commentText,

@@ -3,7 +3,8 @@ import { TERMINAL_STATUSES } from '../config/constants.js';
 
 const leadSchema = new Schema(
   {
-    leadNo: { type: String, unique: true, index: true },
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
+    leadNo: { type: String, index: true },
     customerName: { type: String, required: true, trim: true },
     countryCode: { type: String, default: '+91' },
     mobile: { type: String, required: true, index: true },
@@ -62,6 +63,9 @@ leadSchema.virtual('overdueByMinutes').get(function () {
 });
 
 // Indexes for high performance
+leadSchema.index({ workspace: 1, leadNo: 1 }, { unique: true, sparse: true });
+leadSchema.index({ workspace: 1, status: 1, assignedTo: 1, nextFollowupDate: 1 });
+leadSchema.index({ workspace: 1, createdAt: -1 });
 leadSchema.index({ status: 1, assignedTo: 1, nextFollowupDate: 1 });
 leadSchema.index({ createdBy: 1, status: 1, createdAt: -1 });
 leadSchema.index({ customerName: 'text', companyName: 'text', mobileFull: 'text', email: 'text' });

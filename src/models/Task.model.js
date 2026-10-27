@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 const taskSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     dueDate: { type: Date, required: true },
@@ -14,6 +15,8 @@ const taskSchema = new Schema(
   { timestamps: true }
 );
 
+taskSchema.index({ workspace: 1, assignedTo: 1, dueDate: 1, status: 1 });
+taskSchema.index({ workspace: 1, lead: 1 });
 taskSchema.index({ assignedTo: 1, dueDate: 1, status: 1 });
 taskSchema.index({ lead: 1 });
 

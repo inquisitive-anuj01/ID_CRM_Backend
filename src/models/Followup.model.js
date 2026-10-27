@@ -13,6 +13,7 @@ const followupAttachmentSchema = new Schema(
 
 const followupSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     lead: { type: Schema.Types.ObjectId, ref: 'Lead', required: true, index: true },
     category: { type: Schema.Types.ObjectId, ref: 'FollowupCategory', required: true },
     comment: { type: String, trim: true },
@@ -36,6 +37,8 @@ const followupSchema = new Schema(
   { timestamps: true }
 );
 
+followupSchema.index({ workspace: 1, lead: 1, createdAt: -1 });
+followupSchema.index({ workspace: 1, createdBy: 1, nextFollowupDate: 1, completedAt: 1 });
 followupSchema.index({ lead: 1, createdAt: -1 });
 followupSchema.index({ createdBy: 1, nextFollowupDate: 1, completedAt: 1 });
 

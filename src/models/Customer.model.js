@@ -12,6 +12,7 @@ const contactPersonSchema = new Schema(
 
 const customerSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     // Source
     fromLead: { type: Schema.Types.ObjectId, ref: 'Lead' },
 
@@ -52,6 +53,9 @@ const customerSchema = new Schema(
   { timestamps: true }
 );
 
+customerSchema.index({ workspace: 1, customerName: 1 });
+customerSchema.index({ workspace: 1, mobile: 1 });
+customerSchema.index({ workspace: 1, accountManager: 1 });
 customerSchema.index({ customerName: 1 });
 customerSchema.index({ mobile: 1 });
 customerSchema.index({ accountManager: 1 });

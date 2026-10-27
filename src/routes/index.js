@@ -9,6 +9,7 @@ import reportRoutes from './report.routes.js';
 import notificationRoutes from './notification.routes.js';
 import searchRoutes from './search.routes.js';
 import phase2Routes from './phase2.routes.js';
+import workspaceRoutes from './workspace.routes.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
 const router = Router();
@@ -22,6 +23,7 @@ router.get('/health', (req, res) => {
 });
 
 // Mount modules
+router.use('/workspace', workspaceRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/', masterRoutes);

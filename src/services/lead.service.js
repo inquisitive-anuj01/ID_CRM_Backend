@@ -2,6 +2,12 @@ import Lead from '../models/Lead.model.js';
 import User from '../models/User.model.js';
 import LeadStatus from '../models/LeadStatus.model.js';
 import Setting from '../models/Setting.model.js';
+import Followup from '../models/Followup.model.js';
+import LeadHistory from '../models/LeadHistory.model.js';
+import Note from '../models/Note.model.js';
+import Task from '../models/Task.model.js';
+import Reminder from '../models/Reminder.model.js';
+import Meeting from '../models/Meeting.model.js';
 import { getNextSequence } from '../models/Counter.model.js';
 import { logHistory } from './history.service.js';
 import { createNotification } from './notification.service.js';
@@ -17,8 +23,8 @@ import {
 /**
  * Generate formatted lead number, e.g. L-000001
  */
-export const generateLeadNumber = async () => {
-  const seq = await getNextSequence('lead');
+export const generateLeadNumber = async (workspaceId = null) => {
+  const seq = await getNextSequence('lead', workspaceId);
   return `${LEAD_NO_PREFIX}${String(seq).padStart(LEAD_NO_PADDING, '0')}`;
 };
 
@@ -49,17 +55,19 @@ export const calculateEstimateAmount = (labels = [], fallbackAmount = 0) => {
  */
 export const createLead = async (actor, data) => {
   const { countryCode, mobile, mobileFull } = formatMobile(data.countryCode, data.mobile);
+  const workspaceId = actor.workspace?._id || actor.workspace;
 
   // Calculate estimate amount from labels if provided
   const estimateAmount = calculateEstimateAmount(data.labels, data.estimateAmount);
 
-  // Generate unique lead number
-  const leadNo = await generateLeadNumber();
+  // Generate unique lead number for this workspace
+  const leadNo = await generateLeadNumber(workspaceId);
 
   const assignedTo = data.assignedTo || actor._id;
 
   const lead = await Lead.create({
     ...data,
+    workspace: workspaceId,
     leadNo,
     countryCode,
     mobile,
@@ -339,27 +347,23 @@ export const updateLeadRating = async (lead, actor, rating) => {
 };
 
 /**
- * Soft delete a lead
+ * Hard delete a lead (Admin only strictly removes from database)
  */
 export const deleteLead = async (lead, actor) => {
   if (actor.role !== 'admin') {
-    const setting = await Setting.findOne({ key: 'followup' });
-    if (!setting?.staffCanDeleteOwnLead) {
-      throw ApiError.forbidden('Only admin can delete leads');
-    }
+    throw ApiError.forbidden('Only admin can delete leads');
   }
 
-  lead.isDeleted = true;
-  lead.deletedAt = new Date();
-  lead.deletedBy = actor._id;
-  await lead.save();
-
-  await logHistory({
-    leadId: lead._id,
-    actorId: actor._id,
-    action: HISTORY_ACTIONS.LEAD_DELETED,
-    note: 'Lead deleted',
-  });
+  // Strictly hard delete all related records and the lead itself from the database
+  await Promise.all([
+    Followup.deleteMany({ lead: lead._id }),
+    LeadHistory.deleteMany({ lead: lead._id }),
+    Note.deleteMany({ lead: lead._id }),
+    Task.deleteMany({ lead: lead._id }),
+    Reminder.deleteMany({ lead: lead._id }),
+    Meeting.deleteMany({ lead: lead._id }),
+    Lead.findByIdAndDelete(lead._id),
+  ]);
 
   return { success: true };
 };

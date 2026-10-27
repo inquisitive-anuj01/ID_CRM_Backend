@@ -3,6 +3,7 @@ import { NOTIFICATION_TYPES } from '../config/constants.js';
 
 const notificationSchema = new Schema(
   {
+    workspace: { type: Schema.Types.ObjectId, ref: 'Workspace', required: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: {
       type: String,
@@ -21,6 +22,7 @@ const notificationSchema = new Schema(
   { timestamps: true }
 );
 
+notificationSchema.index({ workspace: 1, user: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 // Expire after 90 days
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
