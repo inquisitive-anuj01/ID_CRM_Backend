@@ -156,11 +156,20 @@ export const updateLead = async (lead, actor, data) => {
   }
 
   if (data.status && data.status !== lead.status) {
+    // If transitioning to cancel via the general update path, require cancelReason
+    if (data.status === 'cancel' && !data.cancelReason) {
+      throw ApiError.validation('Cancel reason is required when moving a lead to cancel', [
+        { field: 'cancelReason', message: 'Required when cancelling a lead' },
+      ]);
+    }
     changes.push({ field: 'status', from: lead.status, to: data.status });
     lead.status = data.status;
     lead.statusChangedAt = new Date();
     if (TERMINAL_STATUSES.includes(data.status)) {
       lead.closedAt = new Date();
+    }
+    if (data.status === 'cancel' && data.cancelReason) {
+      lead.cancelReason = data.cancelReason;
     }
   }
 

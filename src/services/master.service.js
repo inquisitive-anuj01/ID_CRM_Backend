@@ -205,9 +205,19 @@ export const updateSetting = async (data, workspaceId = null) => {
   const query = { key: 'followup' };
   if (workspaceId) query.workspace = workspaceId;
 
+  // Always keep allowedMinutes in sync with maxFollowupGapHours so the
+  // policy service (which reads allowedMinutes) sees the correct value.
+  const updateData = { ...data };
+  if (data.maxFollowupGapHours !== undefined) {
+    updateData.allowedMinutes = Math.round(data.maxFollowupGapHours * 60);
+  }
+
   const setting = await Setting.findOneAndUpdate(
     query,
-    { $set: data, ...(workspaceId && { $setOnInsert: { workspace: workspaceId, key: 'followup' } }) },
+    {
+      $set: updateData,
+      ...(workspaceId && { $setOnInsert: { workspace: workspaceId, key: 'followup' } }),
+    },
     { new: true, upsert: true, runValidators: true }
   );
   return setting;

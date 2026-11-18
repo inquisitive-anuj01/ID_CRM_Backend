@@ -7,11 +7,17 @@ import { ApiError } from '../utils/ApiError.js';
 import { HISTORY_ACTIONS, LEAD_STATUS } from '../config/constants.js';
 
 /**
- * Calculate followup policy parameters
+ * Calculate followup policy parameters.
+ *
+ * gap     = nextFollowupDate − lastFollowupAt (how far ahead is the next followup scheduled?)
+ * allowed = setting.allowedMinutes            (= maxFollowupGapHours × 60, e.g. 48h → 2880 min)
+ *
+ * IN-POLICY  → gap ≤ allowed  (next followup is scheduled within the allowed window)
+ * OUT-OF-POLICY → gap > allowed (too long before the next followup)
  */
-export const calcFollowupPolicy = (createdAt, nextFollowupDate, allowedMinutes = 30) => {
-  const gapMinutes = Math.round((new Date(nextFollowupDate) - new Date(createdAt)) / 60000);
-  const differenceMinutes = allowedMinutes - gapMinutes;
+export const calcFollowupPolicy = (lastFollowupAt, nextFollowupDate, allowedMinutes = 2880) => {
+  const gapMinutes = Math.round((new Date(nextFollowupDate) - new Date(lastFollowupAt)) / 60000);
+  const differenceMinutes = allowedMinutes - gapMinutes; // positive = still within budget; negative = over budget
   const policyStatus = gapMinutes <= allowedMinutes ? 'inpolicy' : 'outofpolicy';
 
   return { gapMinutes, allowedMinutes, differenceMinutes, policyStatus };
@@ -23,7 +29,9 @@ export const calcFollowupPolicy = (createdAt, nextFollowupDate, allowedMinutes =
 import mongoose from 'mongoose';
 
 export const createFollowup = async (leadId, actor, data, files = []) => {
-  const lead = await Lead.findById(leadId);
+  // Resolve workspace from actor — ensures cross-workspace lead access is blocked
+  const wsId = actor.workspace?._id || actor.workspace;
+  const lead = await Lead.findOne({ _id: leadId, ...(wsId && { workspace: wsId }) });
   if (!lead || lead.isDeleted) throw ApiError.notFound('Lead not found');
 
   let category = null;
@@ -53,9 +61,7 @@ export const createFollowup = async (leadId, actor, data, files = []) => {
     throw ApiError.badRequest('Next followup date cannot be in the past');
   }
 
-  const wsId = actor.workspace?._id || actor.workspace || lead.workspace;
   const setting = (await Setting.findOne({ workspace: wsId, key: 'followup' })) || (await Setting.findOne({ key: 'followup' })) || { allowedMinutes: 30, graceMinutes: 0 };
-
   // 1. Mark previous active followup as completed
   const previousFollowup = await Followup.findOne({
     lead: leadId,
@@ -81,7 +87,9 @@ export const createFollowup = async (leadId, actor, data, files = []) => {
   }));
 
   // 3. Compute policy snapshot
-  const policy = calcFollowupPolicy(now, nfd, setting.allowedMinutes);
+  // Use the lead's last followup timestamp as the base (or lead.createdAt for first followup)
+  const policyBase = lead.lastFollowupAt || lead.createdAt || now;
+  const policy = calcFollowupPolicy(policyBase, nfd, setting.allowedMinutes);
 
   // 4. Create followup
   const followup = await Followup.create({
@@ -153,7 +161,8 @@ export const listLeadFollowups = async (leadId) => {
  * Edit a followup
  */
 export const updateFollowup = async (followupId, actor, data) => {
-  const followup = await Followup.findById(followupId);
+  const wsId = actor.workspace?._id || actor.workspace;
+  const followup = await Followup.findOne({ _id: followupId, ...(wsId && { workspace: wsId }) });
   if (!followup || followup.isDeleted) throw ApiError.notFound('Followup not found');
 
   // Staff can only edit their own followups
@@ -178,8 +187,10 @@ export const updateFollowup = async (followupId, actor, data) => {
     changes.push({ field: 'nextFollowupDate', from: followup.nextFollowupDate, to: newNfd });
     followup.nextFollowupDate = newNfd;
 
-    // Recalculate policy
-    const setting = (await Setting.findOne({ key: 'followup' })) || { allowedMinutes: 30 };
+    // Recalculate policy using the followup's original creation time as base
+    const setting = (await Setting.findOne({ workspace: followup.workspace, key: 'followup' })) ||
+                    (await Setting.findOne({ key: 'followup' })) ||
+                    { allowedMinutes: 2880 };
     const policy = calcFollowupPolicy(followup.createdAt, newNfd, setting.allowedMinutes);
     Object.assign(followup, policy);
 
@@ -209,7 +220,8 @@ export const updateFollowup = async (followupId, actor, data) => {
  * Soft delete a followup
  */
 export const deleteFollowup = async (followupId, actor) => {
-  const followup = await Followup.findById(followupId);
+  const wsId = actor.workspace?._id || actor.workspace;
+  const followup = await Followup.findOne({ _id: followupId, ...(wsId && { workspace: wsId }) });
   if (!followup || followup.isDeleted) throw ApiError.notFound('Followup not found');
 
   if (actor.role !== 'admin' && followup.createdBy.toString() !== actor._id.toString()) {
@@ -259,7 +271,12 @@ export const getMyFollowups = async (actor, query = {}) => {
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
 
+  // Always scope to the actor's workspace — this is the critical multi-tenant guard
+  const wsId = actor.workspace?._id || actor.workspace;
+
   const baseFilter = { isDeleted: false };
+  if (wsId) baseFilter.workspace = wsId;
+
   if (actor.role !== 'admin') {
     baseFilter.createdBy = actor._id;
   } else if (query.userId) {

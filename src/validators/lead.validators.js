@@ -39,6 +39,7 @@ export const updateLeadSchema = z.object({
   leadDate: z.string().datetime().optional().or(z.string().date().optional()),
   source: z.string().optional().or(z.literal('')).nullable(),
   status: z.string().optional(),
+  cancelReason: z.string().optional(),   // required by service when status === 'cancel'
   assignedTo: z.string().optional().or(z.literal('')).nullable(),
   labels: z
     .array(
@@ -52,10 +53,26 @@ export const updateLeadSchema = z.object({
   rating: z.number().min(0).max(5).optional(),
 });
 
-export const updateStatusSchema = z.object({
-  status: z.string().min(1, 'Status is required'),
-  cancelReason: z.string().optional(),
-});
+export const updateStatusSchema = z
+  .object({
+    status: z.string().min(1, 'Status is required'),
+    cancelReason: z.string().optional(),
+  })
+  .refine(
+    (data) => data.status !== 'cancel' || (data.cancelReason && data.cancelReason.trim().length > 0),
+    { message: 'Cancel reason is required when moving a lead to cancel', path: ['cancelReason'] }
+  );
+
+export const bulkStatusSchema = z
+  .object({
+    ids: z.array(z.string()).min(1, 'At least one lead ID is required'),
+    status: z.string().min(1, 'Status is required'),
+    cancelReason: z.string().optional(),
+  })
+  .refine(
+    (data) => data.status !== 'cancel' || (data.cancelReason && data.cancelReason.trim().length > 0),
+    { message: 'Cancel reason is required for bulk cancellation', path: ['cancelReason'] }
+  );
 
 export const assignLeadSchema = z.object({
   userId: z.string().min(1, 'Target userId is required'),
@@ -79,8 +96,4 @@ export const bulkAssignSchema = z.object({
   userId: z.string().min(1, 'Target userId is required'),
 });
 
-export const bulkStatusSchema = z.object({
-  ids: z.array(z.string()).min(1, 'At least one lead ID is required'),
-  status: z.string().min(1, 'Status is required'),
-  cancelReason: z.string().optional(),
-});
+

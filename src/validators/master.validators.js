@@ -64,8 +64,15 @@ export const updateCategorySchema = z.object({
 });
 
 export const updateSettingSchema = z.object({
-  allowedMinutes: z.number().positive().optional(),
-  graceMinutes: z.number().nonnegative().optional(),
-  staffCanDeleteOwnLead: z.boolean().optional(),
-  staffFollowupEditWindowMinutes: z.number().positive().optional(),
+  // UI-facing fields (sent from SettingsPage)
+  startHour:            z.number().int().min(0).max(23).optional(),
+  endHour:              z.number().int().min(0).max(23).optional(),
+  maxFollowupGapHours:  z.number().positive().optional(),
+  autoReassignHours:    z.number().nonnegative().optional(),
+
+  // Legacy / advanced fields (still accepted from direct API callers)
+  allowedMinutes:                   z.number().positive().optional(),
+  graceMinutes:                     z.number().nonnegative().optional(),
+  staffCanDeleteOwnLead:            z.boolean().optional(),
+  staffFollowupEditWindowMinutes:   z.number().positive().optional(),
 });
